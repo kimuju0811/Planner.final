@@ -459,7 +459,6 @@
       color: var(--muted);
     }
 
-
     .brand-badge {
       display: inline-flex;
       align-items: center;
@@ -684,7 +683,7 @@
   </div>
 
   <script>
-    const STORAGE_KEY = 'study_planner_pro_final_v1';
+    const STORAGE_KEY = 'study_planner_pro_final_v2';
     const DAYS = ['월', '화', '수', '목', '금', '토', '일'];
     const periods = [
       ['0교시', '07:50-08:00'],
@@ -706,9 +705,17 @@
     const lunchRows = [5, 11];
     const palette = ['#c7d2fe','#bfdbfe','#a7f3d0','#fde68a','#fecdd3','#ddd6fe','#bae6fd','#fdba74','#bbf7d0','#f5d0fe'];
 
+    // 버그 수정 1: UUID 생성 호환성 강화
+    function generateId() {
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+      }
+      return 'task-' + Date.now().toString(36) + Math.random().toString(36).substring(2);
+    }
+
     function createTask(data = {}) {
       return {
-        id: (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2),
+        id: generateId(),
         name: data.name || '새 과제',
         room: data.room || '',
         memo: data.memo || '',
@@ -770,7 +777,6 @@
       future: []
     });
 
-
     let state = loadState();
     let editRef = null;
     let bankSortable = null;
@@ -795,18 +801,25 @@
       }
     }
 
+    // 버그 수정 2: LocalStorage 용량 제한 핸들링
     function persist() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      updateStats();
-      updateButtons();
-      renderDailyPool();
-      const indicator = document.getElementById('saveIndicator');
-      if (indicator) {
-        indicator.textContent = '자동 저장됨';
-        clearTimeout(window.__saveIndicatorTimer);
-        window.__saveIndicatorTimer = setTimeout(() => {
-          indicator.textContent = '자동 저장 완료';
-        }, 800);
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        updateStats();
+        updateButtons();
+        renderDailyPool();
+        const indicator = document.getElementById('saveIndicator');
+        if (indicator) {
+          indicator.textContent = '자동 저장됨';
+          clearTimeout(window.__saveIndicatorTimer);
+          window.__saveIndicatorTimer = setTimeout(() => {
+            indicator.textContent = '자동 저장 완료';
+          }, 800);
+        }
+      } catch (e) {
+        if (e.name === 'QuotaExceededError') {
+          alert('브라우저 저장 공간이 가득 찼습니다. 오래된 메모나 대기 목록을 정리해 주세요.');
+        }
       }
     }
 
@@ -943,15 +956,22 @@
       document.querySelectorAll('.dropzone').forEach(zone => attachTaskClicks(zone, 'grid'));
     }
 
+    // 버그 수정 3: 아이패드 터치 스크롤 간섭 방지 (delay 추가)
+    const SORTABLE_OPTIONS = {
+      group: { name: 'planner', pull: true, put: true },
+      animation: 150,
+      delay: 150,
+      delayOnTouchOnly: true,
+      fallbackOnBody: true
+    };
+
     function mountBankSortable() {
       if (bankSortable) bankSortable.destroy();
       if (trashSortable) trashSortable.destroy();
 
       bankSortable = new Sortable(document.getElementById('pendingList'), {
-        group: { name: 'planner', pull: true, put: true },
+        ...SORTABLE_OPTIONS,
         sort: true,
-        animation: 150,
-        fallbackOnBody: true,
         onStart() { snapshot(); },
         onAdd(evt) {
           syncBankFromDOM(false);
@@ -964,6 +984,7 @@
       trashSortable = new Sortable(document.getElementById('trash'), {
         group: 'planner',
         animation: 150,
+        delay: 0, // 삭제는 즉시 작동
         onAdd(evt) {
           const id = evt.item.dataset.id;
           snapshot();
@@ -979,8 +1000,7 @@
       gridSortables = [];
       document.querySelectorAll('.dropzone').forEach(zone => {
         const instance = new Sortable(zone, {
-          group: { name: 'planner', pull: true, put: true },
-          animation: 150,
+          ...SORTABLE_OPTIONS,
           onStart() { snapshot(); },
           onAdd(evt) { syncAfterDrop(evt); },
           onUpdate(evt) { syncPlacedFromDOM(evt.from, false); syncPlacedFromDOM(evt.to, false); persist(); },
@@ -1106,11 +1126,7 @@
 
     function removeBankTask(id) {
       snapshot();
-
-      // 대기 목록의 해당 매일과제만 지운다.
       state.tasks = state.tasks.filter(t => t.id !== id);
-
-      // 이미 시간표에 배치된 복제 카드들은 유지한다.
       renderAll();
     }
 
@@ -1156,12 +1172,10 @@
 
     function getDailyTaskPriority(task) {
       const name = (task.name || '').replace(/\s+/g, '').toLowerCase();
-
       const isKorean = /국어|독서|문학|화작|언매|비문학/.test(name);
       const isEnglish = /영어|영단어|단어|듣기/.test(name);
       const isMath = /수학|미적|확통|기하|n제|계산/.test(name);
       const isInquiry = /생윤|윤사|사문|정법|탐구|과탐|사탐|한국사/.test(name);
-
       if (isKorean) return 0;
       if (isEnglish) return 1;
       if (isMath) return 2;
@@ -1181,36 +1195,28 @@
       if (!daily.length) return alert('매일 과제가 없어.');
       snapshot();
 
-      // 기존에 배치된 매일과제를 먼저 지워서, 버튼을 다시 눌러도 중복으로 쌓이지 않게 처리
       Object.keys(state.schedule).forEach(key => {
         state.schedule[key] = state.schedule[key].filter(t => t.type !== 'daily');
       });
 
-      // 매일과제 목록의 모든 항목을 월~금 각 요일에 전부 1회씩 배치
       for (let c = 0; c < 5; c++) {
         daily.forEach(task => {
           let placed = false;
-
           for (let r = 1; r < periods.length; r++) {
             if (lunchRows.includes(r)) continue;
-
             const key = scheduleKey(r, c);
             const list = getCellByKey(key);
-
             if (list.length < 3) {
               const clonedTask = structuredClone(task);
-              clonedTask.id = (crypto && crypto.randomUUID) ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(16).slice(2);
+              clonedTask.id = generateId();
               list.push(clonedTask);
               setCellByKey(key, list);
               placed = true;
               break;
             }
           }
-
-          if (!placed) console.warn('배치 실패', task.name, DAYS[c]);
         });
       }
-
       renderGrid();
       persist();
     }
@@ -1253,33 +1259,8 @@
       document.getElementById('weekendBtn').textContent = state.showWeekend ? '토/일 숨기기' : '토/일 표시';
     }
 
-    function exportJSON() {
-      const blob = new Blob([JSON.stringify({ ...state, history: [], future: [] }, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'study-planner-backup.json';
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    function importJSON(file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          const imported = JSON.parse(reader.result);
-          snapshot();
-          state = { ...defaultState(), ...imported, history: [], future: [] };
-          renderAll();
-        } catch {
-          alert('JSON 파일 형식이 올바르지 않아.');
-        }
-      };
-      reader.readAsText(file);
-    }
-
     function seedSchoolTemplate() {
-      if (!confirm('기본 시간표를 다시 적용할까? 현재 시간표는 기본 시간표로 덮어쓰고, 대기 목록과 메모는 그대로 둔다.')) return;
+      if (!confirm('기본 시간표를 다시 적용할까? 현재 시간표는 덮어쓰고, 대기 목록과 메모는 유지한다.')) return;
       snapshot();
       state.schedule = buildBaseSchedule();
       renderGrid();
@@ -1316,9 +1297,7 @@
         const first = getCell(0, c)[0];
         return first && first.name && first.name.includes('주간시험');
       });
-
       const base = buildBaseSchedule();
-
       [0, 4].forEach(c => {
         for (let r = 0; r <= 2; r++) {
           const key = scheduleKey(r, c);
@@ -1329,7 +1308,6 @@
           }
         }
       });
-
       renderGrid();
       persist();
     }
@@ -1372,20 +1350,14 @@
     function updateSuneungDday() {
       const el = document.getElementById('suneungDdayText');
       if (!el) return;
-
       const examDate = new Date('2026-11-19T00:00:00+09:00');
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const target = new Date(examDate.getFullYear(), examDate.getMonth(), examDate.getDate());
       const diffDays = Math.ceil((target - today) / (1000 * 60 * 60 * 24));
-
-      if (diffDays > 0) {
-        el.textContent = `2027학년도 수능까지 D-${diffDays}`;
-      } else if (diffDays === 0) {
-        el.textContent = '2027학년도 수능 D-DAY';
-      } else {
-        el.textContent = `2027학년도 수능 종료 · D+${Math.abs(diffDays)}`;
-      }
+      if (diffDays > 0) el.textContent = `2027학년도 수능까지 D-${diffDays}`;
+      else if (diffDays === 0) el.textContent = '2027학년도 수능 D-DAY';
+      else el.textContent = `2027학년도 수능 종료 · D+${Math.abs(diffDays)}`;
     }
 
     function randomizeColor() {
@@ -1426,6 +1398,7 @@
     renderAll();
     updateTaskPreview();
     updateSuneungDday();
+    updateButtons();
     window.removeBankTask = removeBankTask;
     window.deleteNote = deleteNote;
   </script>
