@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Study Planner Pro</title>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
   <style>
@@ -22,9 +22,6 @@
       --radius: 22px;
       --cell-h: 74px;
       --sticky: #fff8c7;
-      --app-h: 100dvh;
-      --left-w: 760px;
-      --right-w: 350px;
     }
 
     * { box-sizing: border-box; }
@@ -37,19 +34,16 @@
         radial-gradient(circle at top left, rgba(124,58,237,.10), transparent 24%),
         radial-gradient(circle at top right, rgba(79,70,229,.10), transparent 26%),
         linear-gradient(180deg, #f8faff 0%, var(--bg) 100%);
-      min-height: var(--app-h);
-      overflow: hidden;
-      -webkit-text-size-adjust: 100%;
     }
 
     .app {
-      height: var(--app-h);
+      height: 100vh;
       display: grid;
-      grid-template-columns: var(--left-w) var(--right-w);
+      grid-template-columns: 760px 350px;
       justify-content: center;
       align-items: start;
       gap: 12px;
-      padding: max(10px, env(safe-area-inset-top)) 12px max(10px, env(safe-area-inset-bottom)) 12px;
+      padding: 12px;
       overflow: hidden;
     }
 
@@ -62,19 +56,18 @@
     }
 
     .sidebar {
-      width: var(--right-w);
-      padding: 14px;
+      width: 350px;
+      padding: 16px;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 12px;
       overflow: auto;
-      max-height: calc(var(--app-h) - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+      max-height: calc(100vh - 24px);
       scroll-padding-top: 12px;
-      -webkit-overflow-scrolling: touch;
     }
 
     .hero {
-      padding: 12px;
+      padding: 14px;
       background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
       color: #fff;
       border-radius: 18px;
@@ -293,34 +286,34 @@
 
     .workspace {
       min-width: 0;
-      width: var(--left-w);
-      height: calc(var(--app-h) - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
-      padding: 8px;
+      width: 760px;
+      height: calc(100vh - 24px);
+      padding: 10px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 6px;
       overflow: hidden;
     }
 
     .topbar {
       display: flex;
       justify-content: space-between;
-      gap: 6px;
+      gap: 8px;
       align-items: flex-start;
-      padding: 0 2px 0;
+      padding: 2px 2px 0;
       flex: 0 0 auto;
     }
     .topbar h2 {
       margin: 0;
-      font-size: .95rem;
+      font-size: 1rem;
       letter-spacing: -.02em;
-      line-height: 1.05;
+      line-height: 1.1;
     }
     .topbar p {
-      margin: 1px 0 0;
+      margin: 2px 0 0;
       color: var(--muted);
-      font-size: .62rem;
-      line-height: 1.1;
+      font-size: .68rem;
+      line-height: 1.2;
     }
     .toolbar {
       display: flex;
@@ -329,13 +322,13 @@
       align-items: center;
       gap: 8px;
     }
-    .toolbar .btn { width: auto; padding: 6px 8px; font-size: .68rem; }
+    .toolbar .btn { width: auto; padding: 7px 10px; font-size: .74rem; }
 
     .board {
       flex: 1 1 auto;
       min-height: 0;
       overflow: hidden;
-      padding: 2px;
+      padding: 3px;
       border-radius: 18px;
       background: linear-gradient(180deg, rgba(255,255,255,.86), rgba(255,255,255,.72));
       border: 1px solid rgba(255,255,255,.85);
@@ -346,7 +339,7 @@
       height: 100%;
       table-layout: fixed;
       border-collapse: separate;
-      border-spacing: 2px;
+      border-spacing: 3px;
       min-width: 0;
     }
     th, td { vertical-align: top; }
@@ -366,12 +359,12 @@
     th small { display: block; color: var(--muted); margin-top: 1px; font-weight: 600; font-size: .56rem; }
 
     .period-cell {
-      width: 70px;
-      min-width: 70px;
+      width: 74px;
+      min-width: 74px;
       background: rgba(248,250,252,.95);
       border: 1px solid var(--line);
       border-radius: 12px;
-      padding: 3px 4px;
+      padding: 4px 5px;
       position: sticky;
       left: 0;
       z-index: 2;
@@ -380,7 +373,7 @@
     .period-cell .p-time { color: var(--muted); font-size: .5rem; margin-top: 1px; line-height: 1.05; }
 
     .dropzone {
-      min-height: 26px;
+      min-height: 28px;
       background: rgba(255,255,255,.78);
       border: 1px solid var(--line);
       border-radius: 12px;
@@ -494,13 +487,12 @@
     aside.sidebar { order: 2; }
     main.workspace { order: 1; }
 
-    @media (max-width: 1024px) {
+    @media (max-width: 1180px) {
       .app { height: auto; grid-template-columns: 1fr; overflow: visible; }
       .sidebar { width: auto; max-height: none; }
       .workspace { width: 100%; height: auto; min-height: 70vh; }
       .board { overflow: auto; }
       table { min-width: 920px; }
-      body { overflow: auto; }
     }
 
     @media (max-width: 720px) {
@@ -563,14 +555,14 @@
 
       <section class="section">
         <div class="section-title">매일 과제</div>
-        <div class="section-sub">여기서 따로 추가한 뒤, 월~금 빈 칸에 한 번씩 자동 배치할 수 있다.</div>
+        <div class="section-sub">여기서 따로 추가한 뒤, 매일과제 목록의 모든 항목을 월~금 각 요일에 전부 자동 배치할 수 있다.</div>
         <div class="grid-2">
           <input class="input" id="dailyTaskInput" placeholder="예: 영어 단어 / 오답 정리" />
           <button class="btn success" id="addDailyTaskBtn">매일 과제 추가</button>
         </div>
         <div class="chip-row" id="dailyPool" style="margin-top:10px;"></div>
         <div class="grid-2" style="margin-top:10px;">
-          <button class="btn success" id="autofillDailyBtn">월~금 자동 배치</button>
+          <button class="btn success" id="autofillDailyBtn">월~금 전체 반복 배치</button>
           <button class="btn ghost" id="clearDailyPlacedBtn">배치된 매일과제 비우기</button>
         </div>
       </section>
@@ -616,11 +608,6 @@
           <button class="btn soft" id="seedSchoolBtn">기본 시간표 다시 넣기</button>
           <button class="btn danger" id="resetBtn">전체 초기화</button>
         </div>
-      </section>
-
-            <section class="section">
-        <div class="section-title">아이패드에서 열기</div>
-        <div class="section-sub">Safari에서 파일을 연 뒤 공유 버튼 → 홈 화면에 추가를 누르면 앱처럼 바로 열 수 있다.</div>
       </section>
 
       <div class="footer-note">
@@ -1131,22 +1118,35 @@
       const daily = state.tasks.filter(t => t.type === 'daily');
       if (!daily.length) return alert('매일 과제가 없어.');
       snapshot();
+
+      // 기존에 배치된 매일과제를 먼저 지워서, 버튼을 다시 눌러도 중복으로 쌓이지 않게 처리
+      Object.keys(state.schedule).forEach(key => {
+        state.schedule[key] = state.schedule[key].filter(t => t.type !== 'daily');
+      });
+
+      // 매일과제 목록의 모든 항목을 월~금 각 요일에 전부 1회씩 배치
       for (let c = 0; c < 5; c++) {
-        const task = daily[c % daily.length];
-        let placed = false;
-        for (let r = 1; r < periods.length; r++) {
-          if (lunchRows.includes(r)) continue;
-          const key = scheduleKey(r, c);
-          const list = getCellByKey(key);
-          if (list.length < 3) {
-            list.push(structuredClone(task));
-            setCellByKey(key, list);
-            placed = true;
-            break;
+        daily.forEach(task => {
+          let placed = false;
+
+          for (let r = 1; r < periods.length; r++) {
+            if (lunchRows.includes(r)) continue;
+
+            const key = scheduleKey(r, c);
+            const list = getCellByKey(key);
+
+            if (list.length < 3) {
+              list.push(structuredClone(task));
+              setCellByKey(key, list);
+              placed = true;
+              break;
+            }
           }
-        }
-        if (!placed) console.warn('배치 실패', task.name, DAYS[c]);
+
+          if (!placed) console.warn('배치 실패', task.name, DAYS[c]);
+        });
       }
+
       renderGrid();
       persist();
     }
